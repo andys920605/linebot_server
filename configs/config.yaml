@@ -1,0 +1,23 @@
+server:
+  AppVersion: 0.1
+  Port: 8080
+  PprofPort: 5558
+  ReadTimeout: 5
+  WriteTimeout: 5
+  CtxDefaultTimeout: 5
+  Debug: true
+
+mongodb:
+  User: root
+  Password: root
+
+logger:
+  Development: true
+  DisableCaller: false
+  Encoding: json
+  Level: info
+  EnableFile: false
+  InfoFileName: "./logs/server.log"
+  MaxBackups: 5
+  MaxAge: 30
+  MaxSize: 1

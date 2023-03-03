@@ -11,6 +11,10 @@ mongodb:
   User: root
   Password: root
 
+linebot:
+  ChannelSecret: "6df4970b1d94af5edf5a7a0c8a349a50"
+  ChannelAccessToken: "OEC6ojwzDWuY0d2p4Rblah+YnhEA0iAYPDZ+5tRvHsKvdYSXqfZkj0mFjwsayQJx9xFq6XT0bxgrfxad9RlK5f3dnawESgs8aEkvfihnNQfCHcbDN3JrJJtVAPVPk6qJsAoV7BZawt/adVBdt4/ueAdB04t89/1O/w1cDnyilFU="
+
 logger:
   Development: true
   DisableCaller: false

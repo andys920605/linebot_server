@@ -23,6 +23,8 @@ func CreateLinebotServer(ctx context.Context, info *commons.SystemInfo) (*app.Li
 		Config: config,
 		Logger: apiLogger,
 	}
+	// Linebot
+	// linebot, _ := database.NewLinebot(options)
 	// MongoDB
 	db, _ := database.NewDb(options)
 	// Repository

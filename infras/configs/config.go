@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Server  ServerConfig
 	MongoDB MongoDB
+	Linebot Linebot
 	Logger  Logger
 }
 
@@ -31,6 +32,12 @@ type ServerConfig struct {
 type MongoDB struct {
 	User     string
 	Password string
+}
+
+// Linebot
+type Linebot struct {
+	ChannelSecret      string
+	ChannelAccessToken string
 }
 
 // Logger config

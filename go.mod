@@ -6,6 +6,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-chi/render v1.0.2
+	github.com/line/line-bot-sdk-go/v7 v7.19.0
 	github.com/magiconair/properties v1.8.7
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0

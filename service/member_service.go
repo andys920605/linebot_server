@@ -19,16 +19,14 @@ var (
 )
 
 type MemberSvc struct {
-	MemberRep     rep.IMemberRep
-	LinebotClient *linebot.Client
-	ILinebotExt   rep.ILinebotExt
+	MemberRep   rep.IMemberRep
+	ILinebotExt rep.ILinebotExt
 }
 
-func NewMemberSvc(iMemberRep rep.IMemberRep, linebot *linebot.Client, iLinebotExt rep.ILinebotExt) svc_interface.IMemberSvc {
+func NewMemberSvc(iMemberRep rep.IMemberRep, iLinebotExt rep.ILinebotExt) svc_interface.IMemberSvc {
 	return &MemberSvc{
-		MemberRep:     iMemberRep,
-		LinebotClient: linebot,
-		ILinebotExt:   iLinebotExt,
+		MemberRep:   iMemberRep,
+		ILinebotExt: iLinebotExt,
 	}
 }
 

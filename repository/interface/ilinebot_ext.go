@@ -6,7 +6,7 @@ import (
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
 
-//go:generate mockgen -destination=../../test/mock/ilinebot_mock_repository.go -package=mock linebot/repository/interface ILinebotExt
+//go:generate mockgen -destination=../../test/mock/ilinebot_mock_external.go -package=mock linebot/repository/interface ILinebotExt
 type ILinebotExt interface {
 	// sending message to user
 	// @param userid

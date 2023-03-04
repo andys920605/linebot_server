@@ -33,7 +33,7 @@ func CreateLinebotServer(ctx context.Context, info *commons.SystemInfo) (*app.Li
 	// Externals
 	linebotExt := ext.NewLinebotExt(linebot)
 	// Service
-	memberSvc := svc.NewMemberSvc(memberRep, linebot, linebotExt)
+	memberSvc := svc.NewMemberSvc(memberRep, linebotExt)
 	// Router
 	router := router.NewRouter(memberSvc, linebot)
 	// Server

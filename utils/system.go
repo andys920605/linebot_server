@@ -15,6 +15,8 @@ func GetConfigPath() string {
 		return "configs/config" // localhost
 	} else if ConfigPath == "example" {
 		return "../../configs/config"
+	} else if ConfigPath == "router-test" {
+		return "../configs/config"
 	}
 	return "config-local" // release - win-env
 }

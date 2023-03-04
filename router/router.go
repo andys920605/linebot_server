@@ -1,11 +1,13 @@
 package router
 
 import (
-	models_rep "linebot/models/repository"
+	models_svc "linebot/models/service"
 	svc "linebot/service/interface"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
 
 // interface to instance gin.Engine
@@ -14,82 +16,67 @@ type IRouter interface {
 }
 
 type Router struct {
-	MemberSvc svc.IMemberSvc
+	MemberSvc     svc.IMemberSvc
+	LinebotClient *linebot.Client
 }
 
-func NewRouter(ICommentSvc svc.IMemberSvc) IRouter {
+func NewRouter(IMemberSvc svc.IMemberSvc, Linebot *linebot.Client) IRouter {
 	return &Router{
-		MemberSvc: ICommentSvc,
+		MemberSvc:     IMemberSvc,
+		LinebotClient: Linebot,
 	}
 }
 
 // set router
 func (router *Router) InitRouter() *gin.Engine {
 	r := gin.Default()
-	g1 := r.Group("/v1/")
-	g1.GET("/ping", func(c *gin.Context) {
+	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
-	// Comment
-	g1.POST("/comment", router.createComment)
-	g1.GET("/comment/:uuid", router.getComment)
-	g1.PUT("/comment/:uuid", router.updateComment)
-	g1.DELETE("/comment/:uuid", router.deleteComment)
+	r.POST("/callback", router.webhook)
+	r.POST("/broadcast", router.broadcast)
+	r.GET("/user/:userId/messages", router.getUserMessages)
 	return r
 }
 
-// region CRUD Comment
-func (router *Router) createComment(c *gin.Context) {
-	var payload models_rep.Member
-	if err := c.ShouldBind(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"description": err.Error()})
+// region private function
+
+// webhook router
+func (router *Router) webhook(c *gin.Context) {
+	events, err := router.LinebotClient.ParseRequest(c.Request)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	if errRsp := router.MemberSvc.Webhook(events); errRsp != nil {
+		c.JSON(errRsp.StatusCode, errRsp.Message)
 		return
 	}
-	// result, errRsp := router.CommentSvc.CreateComment(&payload)
-	// if errRsp != nil {
-	// 	c.JSON(errRsp.StatusCode, errRsp)
-	// 	return
-	// }
-	c.JSON(http.StatusOK, gin.H{
-		"message": "test",
-	})
+	c.JSON(http.StatusOK, "ok")
 }
-func (router *Router) getComment(c *gin.Context) {
-	// uuid := c.Param("uuid")
-	// result, errRsp := router.CommentSvc.GetComment(uuid)
-	// if errRsp != nil {
-	// 	c.JSON(errRsp.StatusCode, errRsp)
-	// 	return
-	// }
-	c.JSON(http.StatusOK, gin.H{
-		"message": "test",
-	})
+
+// broadcast router
+func (router *Router) broadcast(c *gin.Context) {
+	var payload models_svc.BroadcastMessage
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	if errRsp := router.MemberSvc.Broadcast(&payload); errRsp != nil {
+		c.JSON(errRsp.StatusCode, errRsp.Message)
+		return
+	}
+	c.JSON(http.StatusOK, "ok")
 }
-func (router *Router) updateComment(c *gin.Context) {
-	// uuid := c.Param("uuid")
-	// var payload models_rep.Comment
-	// payload.Uuid = uuid
-	// if err := c.ShouldBind(&payload); err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"description": err.Error()})
-	// 	return
-	// }
-	// result, errRsp := router.CommentSvc.UpdateComment(&payload)
-	// if errRsp != nil {
-	// 	c.JSON(errRsp.StatusCode, errRsp)
-	// 	return
-	// }
-	c.JSON(http.StatusOK, gin.H{
-		"message": "test",
-	})
-}
-func (router *Router) deleteComment(c *gin.Context) {
-	// uuid := c.Param("uuid")
-	// errRsp := router.CommentSvc.DeleteComment(uuid)
-	// if errRsp != nil {
-	// 	c.JSON(http.StatusInternalServerError, errRsp)
-	// 	return
-	// }
-	c.JSON(http.StatusOK, gin.H{"description": "ok"})
+
+// get user messages router
+func (router *Router) getUserMessages(c *gin.Context) {
+	userId := c.Param("userId")
+	rsp, errRsp := router.MemberSvc.GetUserMessages(userId)
+	if errRsp != nil {
+		c.JSON(errRsp.StatusCode, errRsp.Message)
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
 }
 
 // endregion

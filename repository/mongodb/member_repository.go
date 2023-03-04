@@ -6,6 +6,7 @@ import (
 	rep_interface "linebot/repository/interface"
 	"sync"
 
+	"github.com/line/line-bot-sdk-go/v7/linebot"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -21,8 +22,8 @@ func NewMemberRep(db *mongo.Collection) rep_interface.IMemberRep {
 	}
 }
 
-// insert one
-func (rep *MemberRep) Insert(ctx context.Context, param *models_rep.Member) error {
+// insert user info
+func (rep *MemberRep) Insert(ctx context.Context, param *linebot.Event) error {
 	rep.mutex.Lock()
 	defer rep.mutex.Unlock()
 	if _, err := rep.db.InsertOne(context.Background(), *param); err != nil {
@@ -31,38 +32,22 @@ func (rep *MemberRep) Insert(ctx context.Context, param *models_rep.Member) erro
 	return nil
 }
 
-// find one
-func (rep *MemberRep) Find(ctx context.Context, phone string) (*models_rep.Member, error) {
+// find user infos
+func (rep *MemberRep) FindAll(ctx context.Context, userId string) (*[]models_rep.LineEvent, error) {
 	rep.mutex.Lock()
 	defer rep.mutex.Unlock()
-	var result *models_rep.Member
-	filter := bson.D{{Key: "phone", Value: phone}}
-	if err := rep.db.FindOne(context.TODO(), filter).Decode(result); err != nil {
+	var lineEvent models_rep.LineEvent
+	var result []models_rep.LineEvent
+	filter := bson.M{"source.userid": userId, "type": "message"}
+	cur, err := rep.db.Find(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
-	return result, nil
-}
-
-// update one
-func (rep *MemberRep) Update(ctx context.Context, param *models_rep.Member) error {
-	rep.mutex.Lock()
-	defer rep.mutex.Unlock()
-	updateFilter := bson.D{{Key: "phone", Value: param.Phone}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: param.Name}, {Key: "age", Value: param.Age}}}}
-	_, err := rep.db.UpdateOne(context.TODO(), updateFilter, update)
-	if err != nil {
-		return err
+	for cur.Next(ctx) {
+		if err := cur.Decode(&lineEvent); err != nil {
+			return nil, err
+		}
+		result = append(result, lineEvent)
 	}
-	return nil
-}
-
-// delete one
-func (rep *MemberRep) Delete(ctx context.Context, phone string) error {
-	rep.mutex.Lock()
-	defer rep.mutex.Unlock()
-	_, err := rep.db.DeleteOne(ctx, bson.M{"phone": phone})
-	if err != nil {
-		return err
-	}
-	return nil
+	return &result, nil
 }

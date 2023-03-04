@@ -6,6 +6,7 @@ import (
 	"linebot/infras"
 	"linebot/infras/logger"
 	"linebot/models/commons"
+	ext "linebot/repository/externals"
 	rep "linebot/repository/mongodb"
 	"linebot/router"
 	svc "linebot/service"
@@ -24,15 +25,17 @@ func CreateLinebotServer(ctx context.Context, info *commons.SystemInfo) (*app.Li
 		Logger: apiLogger,
 	}
 	// Linebot
-	// linebot, _ := database.NewLinebot(options)
+	linebot, _ := database.NewLinebot(options)
 	// MongoDB
 	db, _ := database.NewDb(options)
 	// Repository
 	memberRep := rep.NewMemberRep(db)
+	// Externals
+	linebotExt := ext.NewLinebotExt(linebot)
 	// Service
-	memberSvc := svc.NewMemberSvc(memberRep)
+	memberSvc := svc.NewMemberSvc(memberRep, linebot, linebotExt)
 	// Router
-	router := router.NewRouter(memberSvc)
+	router := router.NewRouter(memberSvc, linebot)
 	// Server
 	q1Server := app.NewLineBotServer(options, router)
 	return q1Server, nil

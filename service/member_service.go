@@ -1,78 +1,79 @@
 package service
 
 import (
+	"context"
+	"fmt"
 	models_rep "linebot/models/repository"
+	models_svc "linebot/models/service"
 	rep "linebot/repository/interface"
 	svc_interface "linebot/service/interface"
 	"linebot/utils/errs"
+	"net/http"
+	"time"
+
+	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
 
 var (
-//cancelTimeout time.Duration = 3 // default 3 second
+	cancelTimeout time.Duration = 3 // default 3 second
 )
 
 type MemberSvc struct {
-	MemberRep rep.IMemberRep
+	MemberRep     rep.IMemberRep
+	LinebotClient *linebot.Client
+	ILinebotExt   rep.ILinebotExt
 }
 
-func NewMemberSvc(IMemberRep rep.IMemberRep) svc_interface.IMemberSvc {
+func NewMemberSvc(iMemberRep rep.IMemberRep, linebot *linebot.Client, iLinebotExt rep.ILinebotExt) svc_interface.IMemberSvc {
 	return &MemberSvc{
-		MemberRep: IMemberRep,
+		MemberRep:     iMemberRep,
+		LinebotClient: linebot,
+		ILinebotExt:   iLinebotExt,
 	}
 }
 
-func (svc *MemberSvc) CreateMember(param *models_rep.Member) (*models_rep.Member, *errs.ErrorResponse) {
-	// ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
-	// defer cancel()
-	// param.Uuid = uuid.NewV4().String()
-	// if errRsp := svc.MemberRep.Insert(ctx, param); errRsp != nil {
-	// 	return nil, &errs.ErrorResponse{
-	// 		StatusCode: http.StatusInternalServerError,
-	// 		Message:    errRsp.Error(),
-	// 	}
-	// }
-	return param, nil
-}
-func (svc *MemberSvc) GetMember(uuid string) (*models_rep.Member, *errs.ErrorResponse) {
-	// ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
-	// defer cancel()
-	// result, errRsp := svc.MemberRep.Find(ctx, uuid)
-	// if errRsp != nil {
-	// 	return nil, &errs.ErrorResponse{
-	// 		StatusCode: http.StatusNotFound,
-	// 		Message:    errRsp.Error(),
-	// 	}
-	// }
-	return nil, nil
-}
-func (svc *MemberSvc) UpdateMember(param *models_rep.Member) (*models_rep.Member, *errs.ErrorResponse) {
-	// ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
-	// defer cancel()
-	// errRsp := svc.MemberRep.Updates(ctx, param)
-	// if errRsp != nil {
-	// 	return nil, &errs.ErrorResponse{
-	// 		StatusCode: http.StatusNotFound,
-	// 		Message:    errRsp.Error(),
-	// 	}
-	// }
-	// result, errRsp := svc.MemberRep.Find(ctx, param.Uuid)
-	// if errRsp != nil {
-	// 	return nil, &errs.ErrorResponse{
-	// 		StatusCode: http.StatusNotFound,
-	// 		Message:    errRsp.Error(),
-	// 	}
-	// }
-	return nil, nil
-}
-func (svc *MemberSvc) DeleteMember(uuid string) *errs.ErrorResponse {
-	// ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
-	// defer cancel()
-	// errRsp := svc.MemberRep.Delete(ctx, uuid)
-	// if errRsp != nil {
-	// 	return &errs.ErrorResponse{
-	// 		StatusCode: http.StatusNotFound,
-	// 		Message:    errRsp.Error(),
-	// 	}
-	// }
+// webhook event
+func (svc *MemberSvc) Webhook(events []*linebot.Event) *errs.ErrorResponse {
+	ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
+	defer cancel()
+	var err error
+	for _, event := range events {
+		if event.Type == linebot.EventTypeFollow {
+			// push userid to new follower
+			err = svc.ILinebotExt.PushMessage(event.Source.UserID, linebot.NewTextMessage(fmt.Sprintf("User ID: %v", event.Source.UserID)))
+		}
+		err = svc.MemberRep.Insert(ctx, event)
+	}
+	if err != nil {
+		return &errs.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    err.Error(),
+		}
+	}
 	return nil
+}
+
+// broadcast
+func (svc *MemberSvc) Broadcast(param *models_svc.BroadcastMessage) *errs.ErrorResponse {
+	if err := svc.ILinebotExt.BroadcastMessage(param); err != nil {
+		return &errs.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    err.Error(),
+		}
+	}
+	return nil
+}
+
+// get user messages
+func (svc *MemberSvc) GetUserMessages(param string) (*[]models_rep.LineEvent, *errs.ErrorResponse) {
+	ctx, cancel := context.WithTimeout(context.Background(), cancelTimeout*time.Second)
+	defer cancel()
+	rsp, err := svc.MemberRep.FindAll(ctx, param)
+	if err != nil {
+		return nil, &errs.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    err.Error(),
+		}
+	}
+	return rsp, nil
 }
